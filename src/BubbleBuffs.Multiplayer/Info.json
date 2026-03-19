@@ -1,0 +1,13 @@
+﻿{
+  "assemblyName": "BubbleBuffs.Multiplayer.dll",
+  "author": "fl01",
+  "displayName": "BubbleBuffs.Multiplayer",
+  "entryMethod": "BubbleBuffs.Multiplayer.Main.Load",
+  "id": "BubbleBuffs.Multiplayer",
+  "homePage": "",
+  "repository": "https://github.com/fl01/pathfinder-wotr-multiplayer-bubblebuffs",
+  "requirements": [],
+  "gameVersion": "2.7.0x",
+  "managerVersion": "0.23.0",
+  "version": "0.1.0"
+}

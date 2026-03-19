@@ -1,0 +1,81 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net481</TargetFramework>
+		<LangVersion>latest</LangVersion>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<ModsFolder>$(WOTR_PATH)\Mods\</ModsFolder>
+		<ModFolder>$(ModsFolder)\BubbleBuffs.Multiplayer</ModFolder>
+		<ModOutputFolder>$(ModFolder)\*</ModOutputFolder>
+		<MultiplayerModFolder>$(ModsFolder)\00_WOTRMultiplayer</MultiplayerModFolder>
+
+		<PostBuildEvent Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+			xcopy /q /y ".\Info.json" "$(ModOutputFolder)"
+			xcopy /q /y ".\BubbleBuffs.Multiplayer*.dll" "$(ModOutputFolder)"
+			xcopy /q /y ".\BubbleBuffs.Multiplayer*.pdb" "$(ModOutputFolder)"
+		</PostBuildEvent>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.3" PrivateAssets="all" />
+
+		<Reference Include="0Harmony">
+			<HintPath>$(WOTR_PATH)\Wrath_Data\Managed\UnityModManager\0Harmony.dll</HintPath>
+		</Reference>
+		<Reference Include="Assembly-CSharp" Publicize="true">
+			<HintPath>$(WOTR_PATH)\Wrath_Data\Managed\Assembly-CSharp.dll</HintPath>
+		</Reference>
+		<Reference Include="Assembly-CSharp-firstpass">
+			<HintPath>$(WOTR_PATH)\Wrath_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
+		</Reference>
+		<Reference Include="Newtonsoft.Json">
+			<HintPath>$(WOTR_PATH)\Wrath_Data\Managed\Newtonsoft.Json.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityModManager">
+			<HintPath>$(WOTR_PATH)\Wrath_Data\Managed\UnityModManager\UnityModManager.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.CoreModule">
+			<HintPath>$(WOTR_PATH)\Wrath_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+		</Reference>
+		<Reference Include="Owlcat.Runtime.UI" Publicize="true">
+			<HintPath>$(WOTR_PATH)\Wrath_Data\Managed\Owlcat.Runtime.UI.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.UI">
+			<HintPath>$(WOTR_PATH)\Wrath_Data\Managed\UnityEngine.UI.dll</HintPath>
+		</Reference>
+
+		<Reference Include="WOTRMultiplayer">
+			<HintPath>$(MultiplayerModFolder)\WOTRMultiplayer.dll</HintPath>
+		</Reference>
+		<Reference Include="WOTRMultiplayer.Networking">
+			<HintPath>$(MultiplayerModFolder)\WOTRMultiplayer.Networking.dll</HintPath>
+		</Reference>
+		<Reference Include="WOTRMultiplayer.Logging">
+			<HintPath>$(MultiplayerModFolder)\WOTRMultiplayer.Logging.dll</HintPath>
+		</Reference>
+		<Reference Include="BeetleX">
+			<HintPath>$(MultiplayerModFolder)\BeetleX.dll</HintPath>
+		</Reference>
+		<Reference Include="protobuf-net.Core">
+			<HintPath>$(MultiplayerModFolder)\protobuf-net.Core.dll</HintPath>
+		</Reference>
+		<Reference Include="Microsoft.Extensions.Logging.Abstractions">
+			<HintPath>$(MultiplayerModFolder)\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
+		</Reference>
+		<Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions">
+			<HintPath>$(MultiplayerModFolder)\Microsoft.Extensions.DependencyInjection.Abstractions.dll</HintPath>
+		</Reference>
+
+		<Reference Include="BubbleBuffs" Publicize="true">
+			<HintPath>$(ModsFolder)\BubbleBuffs\BubbleBuffs.dll</HintPath>
+		</Reference>
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Update="Info.json">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+</Project>

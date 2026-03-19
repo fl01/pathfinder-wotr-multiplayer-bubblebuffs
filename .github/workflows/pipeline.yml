@@ -1,0 +1,93 @@
+name: "CI"
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+   branches:
+     - 'main'
+     - 'releases/**'
+     - 'features/**'
+concurrency:
+  group: pipeline-${{ github.head_ref || github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+jobs:
+  get-version:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.json-version-parser.outputs.version }}
+    env:
+      INFO_PATH: ./src/BubbleBuffs.Multiplayer/Info.json
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read current version
+        id: json-version-parser
+        run: |
+          baseFullVersion=$(jq '.version' ${{ env.INFO_PATH }} | tr -d '"')
+          echo 'Info Json Version: ' $baseFullVersion
+          majorMinor=$(echo "${baseFullVersion%.*}")
+          echo 'MajorMinorVersion: ' $majorMinor
+          releaseVersion=$(echo $majorMinor.${{ github.run_number }})
+          echo 'Release Version: ' $releaseVersion
+          echo "version=$releaseVersion" >> $GITHUB_OUTPUT
+
+  build:
+    needs: [get-version]
+    timeout-minutes: 10
+    env:
+      WOTR_PATH: ../../libs
+      BUILD_PATH: ".\\src\\BubbleBuffs.Multiplayer\\bin\\Release\\net481"
+      RELEASE_OUTPUT_PATH: ".\\__releases\\BubbleBuffs.Multiplayer"
+      CURRENT_VERSION: ${{needs.get-version.outputs.version}}
+    runs-on: windows-latest
+
+    steps:
+      - name: Verify version
+        if: ${{ env.CURRENT_VERSION == '' }}
+        uses: actions/github-script@v6
+        with:
+          script: |
+            core.setFailed('Unable to parse version');
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.x
+      - name: Build
+        run: dotnet build ./src /p:AssemblyVersion=${{ env.CURRENT_VERSION }} --configuration Release
+      - name: Update Info.json
+        run: |
+          echo $(jq '.version="${{ env.CURRENT_VERSION }}"' "${{ env.BUILD_PATH }}\Info.json") > "${{ env.BUILD_PATH }}\Info.json"
+      - name: Prepare Release
+        run: |
+          xcopy /q /y "${{ env.BUILD_PATH }}\Info.json" "${{ env.RELEASE_OUTPUT_PATH }}\*"
+          xcopy /q /y "${{ env.BUILD_PATH }}\BubbleBuffs.Multiplayer*.dll" "${{ env.RELEASE_OUTPUT_PATH }}\*"
+      - name: Upload Release
+        uses: actions/upload-artifact@v4
+        with:
+          name: bubblebuffs-multiplayer-${{ env.CURRENT_VERSION }}
+          path: "${{ github.workspace }}/__releases/"
+          retention-days: 3
+
+  tag-release:
+    if: ${{ startsWith(github.ref, 'refs/heads/releases/') }}
+    needs: [build, get-version]
+    timeout-minutes: 10
+    env:
+      CURRENT_VERSION: ${{needs.get-version.outputs.version}}
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: rickstaa/action-create-tag@v1
+        with:
+          tag: "${{ env.CURRENT_VERSION }}"
+          message: "Release ${{ env.CURRENT_VERSION }}"
