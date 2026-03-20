@@ -1,12 +1,16 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Reflection;
 using BubbleBuffs.Multiplayer.Networking.Messages;
 using HarmonyLib;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using UnityModManagerNet;
+using WOTRMultiplayer.Abstractions.IO;
+using WOTRMultiplayer.Abstractions.Unity;
+using WOTRMultiplayer.Extensions;
 using WOTRMultiplayer.Networking.Abstractions;
+using WOTRMultiplayer.Networking.Messages;
 
 namespace BubbleBuffs.Multiplayer
 {
@@ -14,13 +18,16 @@ namespace BubbleBuffs.Multiplayer
     {
         public static ILogger<Main> Logger { get; private set; }
 
+        private static UnityModManager.ModEntry _mod;
+
         public static bool Load(UnityModManager.ModEntry entry)
         {
+            _mod = entry;
+
             Logger = WOTRMultiplayer.Main.GetLogger<Main>();
+            Logger.LogInformation("Mod is ready to use WOTRMultiplayer types. ModId={ModId}", _mod.Info.Id);
 
-            Logger.LogInformation("Mod is ready to use WOTRMultiplayer types. ModName={ModName}", entry.Info.Id);
-            InitializeNetworkMessagesMetadata();
-
+            InitializeNetworking();
             SubscribeToNetworkMessages();
 
             entry.OnToggle += OnToggle;
@@ -61,25 +68,52 @@ namespace BubbleBuffs.Multiplayer
 
         private static void OnNotifyBubbleBuffsUsed(long receivedFrom, NotifyBubbleBuffsUsed message)
         {
-            var bufferState = JsonConvert.DeserializeObject<SavedBufferState>(message.RawBufferState);
-            GlobalBubbleBuffer.Instance.SpellbookController.state = new BufferState(bufferState);
-            GlobalBubbleBuffer.Execute(message.Group);
+            var fileSystem = WOTRMultiplayer.Main.ServiceProvider.GetService<IFileSystemService>();
+            fileSystem.WriteFile(BubbleBuffSpellbookController.SettingsPath, message.RawBufferState);
+            GlobalBubbleBuffer.Instance.SpellbookController.CreateBuffstate();
+            // every message handler runs on a background thread, but you need to be in the main thread to access Unity (UI) stuff
+            WOTRMultiplayer.Main.ServiceProvider.GetService<IMainThreadAccessor>().Post(() =>
+            {
+                try
+                {
+                    var spellbook = GlobalBubbleBuffer.Instance.SpellbookController;
+                    if (spellbook.Root != null)
+                    {
+                        spellbook.Root.CleanupAllChildren();
+                        spellbook.WindowCreated = false;
+                    }
+
+                    GlobalBubbleBuffer.Instance.SpellbookController.Execute(message.Group);
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError(ex, "Error while applying buff group. Group={Group}", message.Group);
+                    throw;
+                }
+            });
         }
 
         /// <summary>
-        /// Adds dynamic logging for custom network messages
+        /// 1. Register new protobuf messages
+        /// 2. Configure dynamic logging for new messages
         /// </summary>
-        private static void InitializeNetworkMessagesMetadata()
+        private static void InitializeNetworking()
         {
-            var loggableObjects = typeof(NotifyBubbleBuffsUsed).Assembly.GetTypes()
+            var assemblyMarker = typeof(NotifyBubbleBuffsUsed).Assembly;
+            ProtobufPacket.TypeHeader.Register(assemblyMarker);
+            ProtobufClientPacket.TypeHeader.Register(assemblyMarker);
+
+            var loggableObjects = assemblyMarker.GetTypes()
                 .Where(x => x.GetCustomAttribute<BeetleX.Packets.MessageTypeAttribute>() != null)
                 .ToList();
 
             WOTRMultiplayer.Logging.Object.ObjectLoggingMetadata.Initialize(loggableObjects);
+            Logger.LogInformation("Networking has been initialized. ModId={ModId}", _mod.Info.Id);
         }
 
         private static bool OnToggle(UnityModManager.ModEntry entry, bool isOn)
         {
+            // you can't unsubscribe from network messages as of now
             if (!isOn)
             {
                 entry.Logger.Error("Disabling on the fly is not supported yet. Please restart the game");
