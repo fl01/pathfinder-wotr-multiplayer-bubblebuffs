@@ -10,7 +10,7 @@ namespace BubbleBuffs.Multiplayer.Networking.Messages
     /// </summary>
     [ProtoContract]
     [BeetleX.Packets.MessageType((int)MessageTypes.Mods.Bubble.NotifyBubbleBuffsUsed)]
-    public class NotifyBubbleBuffsUsed
+    public class NotifyBubbleBuffsUsed : IForwardableMessage
     {
         [ProtoMember(1)]
         [LogMe]

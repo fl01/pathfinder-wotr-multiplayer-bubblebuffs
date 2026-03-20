@@ -18,14 +18,14 @@ namespace BubbleBuffs.Multiplayer
     {
         public static ILogger<Main> Logger { get; private set; }
 
-        private static UnityModManager.ModEntry _mod;
+        private static string _modId;
 
         public static bool Load(UnityModManager.ModEntry entry)
         {
-            _mod = entry;
+            _modId = entry.Info.Id;
 
             Logger = WOTRMultiplayer.Main.GetLogger<Main>();
-            Logger.LogInformation("Mod is ready to use WOTRMultiplayer types. ModId={ModId}", _mod.Info.Id);
+            Logger.LogInformation("Mod is ready to use WOTRMultiplayer types. ModId={ModId}", _modId);
 
             InitializeNetworking();
             SubscribeToNetworkMessages();
@@ -66,11 +66,19 @@ namespace BubbleBuffs.Multiplayer
             client.On<NotifyBubbleBuffsUsed>(OnNotifyBubbleBuffsUsed);
         }
 
+        /// <summary>
+        /// 1. Override .json config
+        /// 2. Reload BubbleBuffer state
+        /// 3. Remove obsolete UI elements
+        /// </summary>
+        /// <param name="receivedFrom"></param>
+        /// <param name="message"></param>
         private static void OnNotifyBubbleBuffsUsed(long receivedFrom, NotifyBubbleBuffsUsed message)
         {
             var fileSystem = WOTRMultiplayer.Main.ServiceProvider.GetService<IFileSystemService>();
             fileSystem.WriteFile(BubbleBuffSpellbookController.SettingsPath, message.RawBufferState);
             GlobalBubbleBuffer.Instance.SpellbookController.CreateBuffstate();
+
             // every message handler runs on a background thread, but you need to be in the main thread to access Unity (UI) stuff
             WOTRMultiplayer.Main.ServiceProvider.GetService<IMainThreadAccessor>().Post(() =>
             {
@@ -91,13 +99,6 @@ namespace BubbleBuffs.Multiplayer
                     throw;
                 }
             });
-
-            // there is no direct connection between clients, so server acts as a relay to forward the same notification to other clients (3+ players lobby)
-            var server = WOTRMultiplayer.Main.ServiceProvider.GetRequiredService<INetworkServer>();
-            if (server.IsActive)
-            {
-                server.SendAllExcept(receivedFrom, message);
-            }
         }
 
         /// <summary>
@@ -115,7 +116,7 @@ namespace BubbleBuffs.Multiplayer
                 .ToList();
 
             WOTRMultiplayer.Logging.Object.ObjectLoggingMetadata.Initialize(loggableObjects);
-            Logger.LogInformation("Networking has been initialized. ModId={ModId}", _mod.Info.Id);
+            Logger.LogInformation("Networking has been initialized. ModId={ModId}", _modId);
         }
 
         private static bool OnToggle(UnityModManager.ModEntry entry, bool isOn)
