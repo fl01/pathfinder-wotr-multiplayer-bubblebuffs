@@ -91,6 +91,13 @@ namespace BubbleBuffs.Multiplayer
                     throw;
                 }
             });
+
+            // there is no direct connection between clients, so server acts as a relay to forward the same notification to other clients (3+ players lobby)
+            var server = WOTRMultiplayer.Main.ServiceProvider.GetRequiredService<INetworkServer>();
+            if (server.IsActive)
+            {
+                server.SendAllExcept(receivedFrom, message);
+            }
         }
 
         /// <summary>
