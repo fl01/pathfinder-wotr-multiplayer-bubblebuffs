@@ -55,9 +55,6 @@
 		<Reference Include="WOTRMultiplayer.Logging">
 			<HintPath>$(MultiplayerModFolder)\WOTRMultiplayer.Logging.dll</HintPath>
 		</Reference>
-		<Reference Include="BeetleX">
-			<HintPath>$(MultiplayerModFolder)\BeetleX.dll</HintPath>
-		</Reference>
 		<Reference Include="protobuf-net.Core">
 			<HintPath>$(MultiplayerModFolder)\protobuf-net.Core.dll</HintPath>
 		</Reference>

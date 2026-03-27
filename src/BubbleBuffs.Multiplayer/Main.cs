@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using System.Reflection;
 using BubbleBuffs.Multiplayer.Networking.Messages;
 using HarmonyLib;
@@ -25,7 +24,7 @@ namespace BubbleBuffs.Multiplayer
             _modId = entry.Info.Id;
 
             Logger = WOTRMultiplayer.Main.GetLogger<Main>();
-            Logger.LogInformation("Mod is ready to use WOTRMultiplayer types. ModId={ModId}", _modId);
+            Logger.LogDebug("Mod is ready to use WOTRMultiplayer types. ModId={ModId}", _modId);
 
             InitializeNetworking();
             SubscribeToNetworkMessages();
@@ -101,21 +100,10 @@ namespace BubbleBuffs.Multiplayer
             });
         }
 
-        /// <summary>
-        /// 1. Register new protobuf messages
-        /// 2. Configure dynamic logging for new messages
-        /// </summary>
         private static void InitializeNetworking()
         {
-            var assemblyMarker = typeof(NotifyBubbleBuffsUsed).Assembly;
-            ProtobufPacket.TypeHeader.Register(assemblyMarker);
-            ProtobufClientPacket.TypeHeader.Register(assemblyMarker);
-
-            var loggableObjects = assemblyMarker.GetTypes()
-                .Where(x => x.GetCustomAttribute<BeetleX.Packets.MessageTypeAttribute>() != null)
-                .ToList();
-
-            WOTRMultiplayer.Logging.Object.ObjectLoggingMetadata.Initialize(loggableObjects);
+            var assembly = Assembly.GetExecutingAssembly();
+            NetworkMessages.Register(assembly);
             Logger.LogInformation("Networking has been initialized. ModId={ModId}", _modId);
         }
 

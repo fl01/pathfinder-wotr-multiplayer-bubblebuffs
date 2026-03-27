@@ -9,7 +9,7 @@ namespace BubbleBuffs.Multiplayer.Networking.Messages
     /// Ideally, it should be added to the multiplayer mod before release, as that serves as the primary source of truth.
     /// </summary>
     [ProtoContract]
-    [BeetleX.Packets.MessageType((int)MessageTypes.Mods.Bubble.NotifyBubbleBuffsUsed)]
+    [MessageType((int)MessageTypes.Mods.Bubble.NotifyBubbleBuffsUsed)]
     public class NotifyBubbleBuffsUsed : IForwardableMessage
     {
         [ProtoMember(1)]
