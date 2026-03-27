@@ -15,9 +15,9 @@ namespace BubbleBuffs.Multiplayer
 {
     public class Main
     {
-        public static ILogger<Main> Logger { get; private set; }
-
         private static string _modId;
+
+        public static ILogger<Main> Logger { get; private set; }
 
         public static bool Load(UnityModManager.ModEntry entry)
         {
