@@ -6,7 +6,14 @@
   "id": "BubbleBuffs.Multiplayer",
   "homePage": "https://github.com/fl01/pathfinder-wotr-multiplayer-bubblebuffs",
   "repository": "",
-  "requirements": [],
+  "requirements": [
+    "WOTRMultiplayer",
+    "BubbleBuffs"
+  ],
+  "loadAfter": [
+    "WOTRMultiplayer",
+    "BubbleBuffs"
+  ],
   "gameVersion": "2.7.0x",
   "managerVersion": "0.23.0",
   "version": "0.1.0"
