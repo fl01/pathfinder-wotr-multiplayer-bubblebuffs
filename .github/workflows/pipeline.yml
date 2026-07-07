@@ -2,7 +2,6 @@ name: "CI"
 
 on:
   workflow_dispatch:
-  pull_request:
   push:
    branches:
      - 'main'
@@ -17,7 +16,8 @@ jobs:
     timeout-minutes: 10
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.json-version-parser.outputs.version }}
+      releaseVersion: ${{ steps.json-version-parser.outputs.releaseVersion }}
+      assemblyVersion: ${{ steps.json-version-parser.outputs.assemblyVersion }}
     env:
       INFO_PATH: ./src/BubbleBuffs.Multiplayer/Info.json
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -27,13 +27,28 @@ jobs:
       - name: Read current version
         id: json-version-parser
         run: |
-          baseFullVersion=$(jq '.version' ${{ env.INFO_PATH }} | tr -d '"')
-          echo 'Info Json Version: ' $baseFullVersion
-          majorMinor=$(echo "${baseFullVersion%.*}")
-          echo 'MajorMinorVersion: ' $majorMinor
-          releaseVersion=$(echo $majorMinor.${{ github.run_number }})
-          echo 'Release Version: ' $releaseVersion
-          echo "version=$releaseVersion" >> $GITHUB_OUTPUT
+          baseFullVersion=$(jq -r '.version' "${{ env.INFO_PATH }}")
+          echo "Info Json Version: $baseFullVersion"
+          majorMinor="${baseFullVersion%.*}"
+          echo "MajorMinorVersion: $majorMinor"
+          
+          # github run offset so the next run becomes version 1
+          baseRun=21
+          echo "GitHub Run: ${{ github.run_number }}"
+          versionRunNumber=$(( ${{ github.run_number }} - baseRun ))
+          versionRunNumber=$(( versionRunNumber < 0 ? 0 : versionRunNumber ))
+          echo "Version Run: $versionRunNumber"
+          
+          assemblyVersion="${majorMinor}.${versionRunNumber}"
+          releaseVersion="$assemblyVersion"
+          if [[ "${{ github.ref_name }}" == features/* ]]; then
+            releaseVersion="${releaseVersion}-alpha"
+          fi
+
+          echo "Release Version: $releaseVersion"
+          echo "releaseVersion=$releaseVersion" >> "$GITHUB_OUTPUT"
+          echo "Assembly Version: $assemblyVersion"
+          echo "assemblyVersion=$assemblyVersion" >> "$GITHUB_OUTPUT"
 
   build:
     needs: [get-version]
@@ -42,7 +57,8 @@ jobs:
       WOTR_PATH: ../../libs
       BUILD_PATH: ".\\src\\BubbleBuffs.Multiplayer\\bin\\Release\\net481"
       RELEASE_OUTPUT_PATH: ".\\__releases\\BubbleBuffs.Multiplayer"
-      CURRENT_VERSION: ${{needs.get-version.outputs.version}}
+      CURRENT_VERSION: ${{needs.get-version.outputs.releaseVersion}}
+      ASSEMBLY_VERSION: ${{needs.get-version.outputs.assemblyVersion}}
     runs-on: windows-latest
 
     steps:
@@ -67,7 +83,7 @@ jobs:
         run: |
           xcopy /E /I /Y "wotr-libs\bubblebuffslibs\libs" "libs\"
       - name: Build
-        run: dotnet build ./src /p:AssemblyVersion=${{ env.CURRENT_VERSION }} --configuration Release
+        run: dotnet build ./src /p:AssemblyVersion=${{ env.ASSEMBLY_VERSION }} --configuration Release
       - name: Update Info.json
         run: |
           echo $(jq '.version="${{ env.CURRENT_VERSION }}"' "${{ env.BUILD_PATH }}\Info.json") > "${{ env.BUILD_PATH }}\Info.json"
