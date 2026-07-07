@@ -7,7 +7,7 @@
   "homePage": "https://github.com/fl01/pathfinder-wotr-multiplayer-bubblebuffs",
   "repository": "",
   "requirements": [
-    "WOTRMultiplayer",
+    "WOTRMultiplayer-0.3.0",
     "BubbleBuffs"
   ],
   "loadAfter": [

@@ -37,31 +37,31 @@ namespace BubbleBuffs.Multiplayer
         }
 
         /// <summary>
-        /// Either server or client is active at the same time
+        /// Either host or client is active at the same time
         /// </summary>
         /// <param name="message"></param>
         public static void Send(object message)
         {
-            var server = WOTRMultiplayer.Main.ServiceProvider.GetService<INetworkServer>();
-            if (server.IsActive)
+            var host = WOTRMultiplayer.Main.ServiceProvider.GetService<INetworkHostConnection>();
+            if (host.IsActive)
             {
-                server.SendAll(message);
+                host.Broadcast(message);
                 return;
             }
 
-            var client = WOTRMultiplayer.Main.ServiceProvider.GetService<INetworkClient>();
+            var client = WOTRMultiplayer.Main.ServiceProvider.GetService<INetworkClientConnection>();
             if (client.IsActive)
             {
-                client.Send(message);
+                client.Broadcast(message);
             }
         }
 
         private static void SubscribeToNetworkMessages()
         {
-            var server = WOTRMultiplayer.Main.ServiceProvider.GetService<INetworkServer>();
+            var server = WOTRMultiplayer.Main.ServiceProvider.GetService<INetworkHostConnection>();
             server.On<NotifyBubbleBuffsUsed>(OnNotifyBubbleBuffsUsed);
 
-            var client = WOTRMultiplayer.Main.ServiceProvider.GetService<INetworkClient>();
+            var client = WOTRMultiplayer.Main.ServiceProvider.GetService<INetworkClientConnection>();
             client.On<NotifyBubbleBuffsUsed>(OnNotifyBubbleBuffsUsed);
         }
 
