@@ -58,8 +58,8 @@ namespace BubbleBuffs.Multiplayer
 
         private static void SubscribeToNetworkMessages()
         {
-            var server = WOTRMultiplayer.Main.ServiceProvider.GetService<INetworkHostConnection>();
-            server.On<NotifyBubbleBuffsUsed>(OnNotifyBubbleBuffsUsed);
+            var host = WOTRMultiplayer.Main.ServiceProvider.GetService<INetworkHostConnection>();
+            host.On<NotifyBubbleBuffsUsed>(OnNotifyBubbleBuffsUsed);
 
             var client = WOTRMultiplayer.Main.ServiceProvider.GetService<INetworkClientConnection>();
             client.On<NotifyBubbleBuffsUsed>(OnNotifyBubbleBuffsUsed);
